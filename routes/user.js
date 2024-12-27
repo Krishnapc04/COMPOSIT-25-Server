@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const cookieParser = require('cookie-parser');
 const User = require('../models/user.model');
+const Event = require('../models/events.model');
+const isUser = require('../middleware/isUser');
 
 
 router.use(cookieParser());
@@ -12,10 +14,17 @@ router.use(cookieParser());
 // Register 
 
 router.post('/register', async (req, res) => {
+
+  const userData = req.body; // Store all incoming data in one object
+
     try {
-      const userData = req.body; // Store all incoming data in one object
-      const namePart = userData.name.slice(0, 2).toUpperCase();
-      const phonePart = userData.phone.slice(-3);
+
+      console.log('Received Data:', userData);
+
+
+      const namePart = userData.name && userData.name.slice(0, 2).toUpperCase();
+      const phonePart = userData.phone && userData.phone.slice(-3);
+      
       const randomLetters = String.fromCharCode(
         65 + Math.floor(Math.random() * 26),
         65 + Math.floor(Math.random() * 26)
@@ -37,7 +46,13 @@ router.post('/register', async (req, res) => {
       const newUser = new User(userData);
   
       res.status(201).json(await newUser.save());
+
+
+         
+
       console.log("new user formed")
+
+
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -111,8 +126,140 @@ router.post('/register', async (req, res) => {
     }
   });
 
-  
 
 
+// Team Registrations - Create Team 
+
+router.post('/maketeam',isUser , async (req, res) => {
+
+  // console.log("Request Body:", req.body);
+  const { userId, EventDetials } = req.body;
+  // console.log("Event Details:", EventDetials);
+
+  try {   
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+let event = await Event.findOne({ eventName: EventDetials.eventName });
+
+
+if (!event) {
+  event = new Event({ eventName: EventDetials.eventName, Teams: [] });
+  await event.save();
+}
+    
+    // console.log('event foudn', event)
+
+    const teamPart = EventDetials.teamName && EventDetials.teamName.slice(0, 2).toUpperCase();
+
+    const randomLetters = String.fromCharCode(
+      65 + Math.floor(Math.random() * 26),
+      65 + Math.floor(Math.random() * 26)
+    );
+    const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
+
+
+    // Check if the teamName already exists in the event
+    const teamExists = Event.Teams.some((team) => team.teamName === EventDetials.teamName);
+    if (teamExists) {
+      return res.status(400).json({ message: 'Team name already exists in this event.' });
+    }
+
+    // console.log('eventDetials', EventDetials)
+    
+    const customID = `C25${teamPart}${randomLetters}${randomNumbers}`;
+// console.log('customId genetrated', customID)
+
+    // console.log('before theams push',event)
+
+    event.Teams.push({
+      teamName: EventDetials.teamName,
+      teamId: customID,
+      members: [
+        {
+          name: user.name,
+          email: user.email,
+          role: "Admin",
+          memberId: user._id
+        }
+      ]   
+
+    });
+
+    // console.log('After theams push', event)
+
+
+    
+    await event.save();
+
+console.log('Event saved successfully')
+
+    user.events.push({
+      eventName: EventDetials.eventName,
+      teamName: EventDetials.teamName,
+      teamId: customID,
+      role:"Admin"
+    })
+    // console.log('after user push', user)
+
+    await user.save();
+
+console.log(event, user)
+    res.status(200).json({ message: 'Team created successfully' });
+
+
+
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
+
+// Join Team 
+
+router.post('/jointeam',isUser,  async (req, res) => {
+  const {userId , eventName, teamId} = req.body;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const event = await Event.findOne({ eventName });
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+    const team = event.Teams.find((team) => team.teamId === teamId);
+
+    if (!team) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
+    const userExistsInTeam = team.members.some((member) => member.memberId.toString() === user._id.toString());
+
+if (userExistsInTeam) {
+  return res.status(400).json({ message: 'User is already a member of this team.' });
+}
+
+
+    team.members.push({ name: user.name, email: user.email, role: "Member", memberId: user._id });
+
+    // await team.save();
+    await event.save();
+
+    user.events.push({ eventName, teamName: team.teamName, teamId, role: "Member" });
+    await user.save();
+
+    res.status(200).json({ message: 'Joined team successfully' });
+
+
+  } catch (error) {
+    res.send(error.message)
+  }
+
+
+})
 
   module.exports = router;

@@ -33,7 +33,6 @@ const UserSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      enum: ['Male', 'Female', 'Other'],
       required: true,
     },
     collegeName: {
@@ -68,6 +67,38 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    certificate: {
+      type: Boolean,
+      default: false
+    },
+    present : {
+      type: Boolean,
+      default: false
+    },
+    events : [
+      {
+        eventName :{
+          type: String, 
+          trim: true,
+        },
+        teamName : {
+          type: String, 
+          trim: true,
+        },
+        teamId: { 
+          type: String, 
+          required: true 
+        },
+        role: {
+          type: String,
+          trim: true
+        },
+        registeredAt: {
+          type: Date,
+          default: Date.now,
+        },
+      }
+    ]
   },
   { timestamps: true } // Automatically add createdAt and updatedAt fields
 );

@@ -2,6 +2,8 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./db');
+const cookieParser = require('cookie-parser');
+
 
 
 dotenv.config();
@@ -12,6 +14,9 @@ const PORT = process.env.PORT || 5000;
 
 //MIddleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Parse cookies
+
 app.use(cors());
 
 // Connect to MongoDB

@@ -73,10 +73,7 @@ router.use(cookieParser());
   });
 
   
-  // All Users
-
-
-
+// All Users
 // Route to get all users (accessible by admin only)
 router.get('/allusers', isAdmin, async (req, res) => {
   try {
@@ -88,6 +85,18 @@ router.get('/allusers', isAdmin, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// Get event info 
+router.get('/eventinfo', isAdmin, async (req, res) => {
+  const { eventName } = req.body;
+
+  try {
+
+  } catch (error) {
+    
+  }
+})
 
 
 
