@@ -3,8 +3,11 @@ const dotenv = require('dotenv');
 dotenv.config(); // Load environment variables
 
 const isUser = (req, res, next) => {
-    const token = req.cookies.token;
-    // console.log("token found", token)
+    console.log(req.cookies)
+    console.log(req.cookies.token)
+    // const token = req.cookies.token;
+    const token = req.body.token;
+    console.log("token found", token)
     if (!token) return res.status(401).send({ message: 'Unauthorized - Token not Provided' });
 
     try {

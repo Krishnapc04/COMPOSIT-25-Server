@@ -75,6 +75,10 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    Hall : {
+      type: String,
+      trim: true
+    },
     events : [
       {
         eventName :{

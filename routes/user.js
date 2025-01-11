@@ -12,52 +12,63 @@ router.use(cookieParser());
 
 
 // Register 
-
 router.post('/register', async (req, res) => {
-
   const userData = req.body; // Store all incoming data in one object
 
-    try {
+  try {
+    console.log('Received Data:', userData);
 
-      console.log('Received Data:', userData);
+    const namePart = userData.name && userData.name.slice(0, 2).toUpperCase();
+    const phonePart = userData.phone && userData.phone.slice(-3);
 
+    const randomLetters = String.fromCharCode(
+      65 + Math.floor(Math.random() * 26),
+      65 + Math.floor(Math.random() * 26)
+    );
+    const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
+    const customID = `C25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
 
-      const namePart = userData.name && userData.name.slice(0, 2).toUpperCase();
-      const phonePart = userData.phone && userData.phone.slice(-3);
-      
-      const randomLetters = String.fromCharCode(
-        65 + Math.floor(Math.random() * 26),
-        65 + Math.floor(Math.random() * 26)
-      );
-      const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
-      const customID = `C25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
-      
-      userData._id = customID;
+    userData._id = customID;
 
-        
-      if (await User.findOne({ email: userData.email })) {
-        return res.status(400).json({ message: 'User with this email already exists' });
-      }
-      if (await User.findOne({phone: userData.phone})) {
-        return res.status(400).json({ message: 'this phone number already exists' });
-      }
-  
-      userData.password = await bcrypt.hash(userData.password, 10); // Hash password
-      const newUser = new User(userData);
-  
-      res.status(201).json(await newUser.save());
-
-
-         
-
-      console.log("new user formed")
-
-
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+    if (await User.findOne({ email: userData.email })) {
+      return res.status(400).json({ message: 'User with this email already exists' });
     }
-  });
+    if (await User.findOne({ phone: userData.phone })) {
+      return res.status(400).json({ message: 'This phone number already exists' });
+    }
 
+    userData.password = await bcrypt.hash(userData.password, 10); // Hash password
+    const newUser = new User(userData);
+    await newUser.save();
+
+
+    delete userData.password;  
+    delete userData.createdAt; 
+    delete userData.updatedAt;
+    delete userData.__v;
+    delete userData.referral
+
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: newUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' } // Token validity
+    );
+
+    // Save token in cookies (with HttpOnly flag for security)
+    res.cookie('token', token, {
+      httpOnly: true,   // Prevent access to the cookie via JavaScript
+      secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
+      maxAge: 7200000,  // 2 hours (in milliseconds)
+    });
+
+    return res.status(201).json({ message: 'User created successfully', token:token , user: { userData } });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
   // Login
@@ -86,8 +97,10 @@ router.post('/register', async (req, res) => {
       const token = jwt.sign(
         { id: user._id },  
         process.env.JWT_SECRET, 
-        { expiresIn: '2h' } // Token validity
+        { expiresIn: '1h' } // Token validity
       );
+
+      console.log("token generated", token)
   
       // Save token in cookies (with HttpOnly flag for security)
       res.cookie('token', token, {
@@ -95,12 +108,20 @@ router.post('/register', async (req, res) => {
         secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
         maxAge: 7200000,  // 1 hour (in milliseconds)
       });
+
+ console.log("token saved to cookies")
+
+      res.cookie('isLogedIn', true)
   
+      console.log("saved cookies : ", req.cookies)
       // Send response
       res.status(200).json({
         message: 'Login successful',
         user: { userData },
+        token : token
       });
+
+      console.log("logged in successfully", userData)
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -110,7 +131,9 @@ router.post('/register', async (req, res) => {
 
   // Logout
 
-  router.post('/logout', (req, res) => {
+  router.post('/logout',isUser, async (req, res) => {
+    const {userID} = req.body
+
     try {
 
       res.clearCookie('token', {
@@ -118,6 +141,7 @@ router.post('/register', async (req, res) => {
         secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
         sameSite: 'strict', // Ensures the cookie is not sent with cross-site requests
       });
+      res.cookie('isLogedIn', false)
   
       
       res.status(200).json({ message: 'Logout successful' });
@@ -261,5 +285,8 @@ if (userExistsInTeam) {
 
 
 })
+
+
+
 
   module.exports = router;

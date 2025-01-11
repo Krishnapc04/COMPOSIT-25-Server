@@ -5,6 +5,7 @@ const router = express.Router();
 const cookieParser = require('cookie-parser');
 const User = require('../models/user.model');
 const isAdmin = require('../middleware/isAdmin'); 
+const Event = require('../models/events.model');
 
 router.use(cookieParser());
 
@@ -38,7 +39,6 @@ router.use(cookieParser());
   
       // Save token in cookies (with HttpOnly flag for security)
       res.cookie('token', token, {
-        httpOnly: true,   // Prevent access to the cookie via JavaScript
         secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
         maxAge: 7200000,  // 1 hour (in milliseconds)
       });
@@ -46,6 +46,7 @@ router.use(cookieParser());
       // Send response
       res.status(200).json({
         message: 'Admin Login successful',
+        token : token
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -56,7 +57,7 @@ router.use(cookieParser());
 
   // Logout
 
-  router.post('/logout', (req, res) => {
+  router.post('/logout',isAdmin, (req, res) => {
     try {
 
       res.clearCookie('token', {
@@ -75,10 +76,11 @@ router.use(cookieParser());
   
 // All Users
 // Route to get all users (accessible by admin only)
-router.get('/allusers', isAdmin, async (req, res) => {
+router.post('/allusers', isAdmin, async (req, res) => {
   try {
     // Fetch all users except the admin (optional)
     const users = await User.find({}, '-password -updatedAt -__v'); // Exclude password, createdAt, updatedAt fields
+
 
     res.status(200).json({ users}); // Send the list of users
   } catch (error) {
@@ -88,15 +90,91 @@ router.get('/allusers', isAdmin, async (req, res) => {
 
 
 // Get event info 
-router.get('/eventinfo', isAdmin, async (req, res) => {
+router.post('/eventinfo', isAdmin, async (req, res) => {
   const { eventName } = req.body;
-
   try {
 
-  } catch (error) {
+    const event = await Event.findOne({ eventName });// Find the event by name
+
+    if (!event) { 
+      return res.status(404).json({ message: 'Event not found' });
+      }
+      res.status(200).json({ event });
     
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 })
+
+// Mark Presenty 
+router.post('/markpresent', isAdmin, async (req, res) => {
+  const {userId} = req.body;
+
+  try {
+    const user = await User.findByIdAndUpdate(userId, { $set: { present: true } }, { new: true });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User marked as present', user });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+
+})
+
+// Delete User
+router.delete('/deleteuser', isAdmin, async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+      res.status(200).json({ message: 'User deleted', user });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// generate certificate
+router.post('/generatecertificate', isAdmin, async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    const user = await User.findByIdAndUpdate(userId, { $set: { certificate: true } }, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+      const certificate = await generateCertificate(user);
+      res.status(200).json({ message: 'Certificate generated', certificate });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Allote Hall 
+router.post('/allotHall', isAdmin, async (req, res) => {
+  const { userId, HallName} = req.body;
+
+  try {
+    const user = await User.findByIdAndUpdate(userId, { $set: { Hall: HallName } }, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+      res.status(200).json({ message: 'Hall Alloted', user });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
+
+
 
 
 

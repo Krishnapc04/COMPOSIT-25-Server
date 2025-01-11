@@ -4,8 +4,13 @@ dotenv.config(); // Load environment variables
 
 // Admin authorization middleware
 const isAdmin = (req, res, next) => {
+
+  const token = req.body.token;
+
+  // console.log("is admin runned")
   // Get the token from cookies
-  const token = req.cookies.token;
+  // const token = req.headers.authorization?.split(' ')[1]; // Extract the token from the Authorization header
+// console.log("baceknd token recived",token)
 
   if (!token) {
     return res.status(403).json({ message: 'Access denied. No token provided.' });
