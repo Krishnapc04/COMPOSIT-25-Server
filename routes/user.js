@@ -7,6 +7,11 @@ const User = require('../models/user.model');
 const Event = require('../models/events.model');
 const isUser = require('../middleware/isUser');
 
+const { PDFDocument, rgb } = require("pdf-lib");
+const fontkit = require('@pdf-lib/fontkit'); // Import fontkit
+const fs = require("fs");
+const path = require("path");
+
 
 router.use(cookieParser());
 
@@ -27,6 +32,84 @@ router.post('/register', async (req, res) => {
     );
     const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
     const customID = `C25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
+
+    userData._id = customID;
+
+    if (await User.findOne({ email: userData.email })) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+    if (await User.findOne({ phone: userData.phone })) {
+      return res.status(400).json({ message: 'This phone number already exists' });
+    }
+
+    const referal = userData.referral;
+
+    if (referal) {
+      const SA = await User.findOne({ SaId : referal });
+      if (SA) {
+        SA.SaMember.push({ MemberId: customID, MemberName: userData.name });
+        await SA.save();
+      }
+    }
+
+    userData.Hall = "None"
+ 
+
+    userData.password = await bcrypt.hash(userData.password, 10); // Hash password
+    const newUser = new User(userData);
+    await newUser.save();
+
+
+    delete userData.password;  
+    delete userData.createdAt; 
+    delete userData.updatedAt;
+    delete userData.__v;
+    delete userData.referral
+
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: newUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' } // Token validity
+    );
+
+    // Save token in cookies (with HttpOnly flag for security)
+    res.cookie('token', token, {
+      httpOnly: true,   // Prevent access to the cookie via JavaScript
+      secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
+      maxAge: 7200000,  // 2 hours (in milliseconds)
+    });
+
+    return res.status(201).json({ message: 'User created successfully', token:token , user: { userData } });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+// SA Register 
+router.post('/SaRegister', async (req, res) => {
+  const userData = req.body; // Store all incoming data in one object
+
+  try {
+    console.log('Received Data:', userData);
+
+    const namePart = userData.name && userData.name.slice(0, 2).toUpperCase();
+    const phonePart = userData.phone && userData.phone.slice(-3);
+
+    const randomLetters = String.fromCharCode(
+      65 + Math.floor(Math.random() * 26),
+      65 + Math.floor(Math.random() * 26)
+    );
+    const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
+    const customID = `C25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
+
+    const SAId = `CSA25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
+    userData.SaId = SAId
+    userData.Sa = true
 
     userData._id = customID;
 
@@ -69,6 +152,9 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+
 
 
   // Login
@@ -131,9 +217,8 @@ router.post('/register', async (req, res) => {
 
   // Logout
 
-  router.post('/logout',isUser, async (req, res) => {
-    const {userID} = req.body
-
+  router.post('/logout',isUser , async (req, res) => {
+  
     try {
 
       res.clearCookie('token', {
@@ -147,7 +232,7 @@ router.post('/register', async (req, res) => {
       res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
       res.status(500).json({ error: error.message });
-    }
+    } 
   });
 
 
@@ -207,7 +292,7 @@ if (!event) {
           email: user.email,
           role: "Admin",
           memberId: user._id
-        }
+        } 
       ]   
 
     });
@@ -287,6 +372,89 @@ if (userExistsInTeam) {
 })
 
 
+router.post('/generateCertificate', async (req,res)=>{
 
+  try {
+    const { userId } = req.body; // Extract name from the request body
+    const user = await User.findById(userId)
+
+    // if(!user.certificate){
+    //   return res.status(400).json({ message: 'User does not have a right to get certificate' })
+    // }
+
+    const name = user.name
+    const templatePath = path.join(__dirname, 'Certificate.pdf');
+    const fontPath = path.join(__dirname, 'fancytext.ttf'); // Path to your custom font
+
+
+    if (!fs.existsSync(templatePath)) {
+      return res.status(404).json({ message: 'Certificate template not found' });
+    }
+
+    if (!fs.existsSync(fontPath)) {
+      return res.status(404).json({ message: 'Custom font file not found' });
+    }
+
+    // Load the existing PDF template
+    const existingPdfBytes = fs.readFileSync(templatePath);
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+       // Register fontkit
+       pdfDoc.registerFontkit(fontkit);
+ 
+        // Load the custom font
+        const customFontBytes = fs.readFileSync(fontPath);
+        console.log("Font file buffer length:", customFontBytes.length); // Log the buffer length
+
+        const customFont = await pdfDoc.embedFont(customFontBytes);
+    
+
+    // Get the first page of the PDF 
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+
+    // Set font size and position for the name
+    const { width, height } = firstPage.getSize();
+    firstPage.drawText(name, {
+      x: width / 2 - 100, // Center horizontally (adjust as needed)
+      y: height / 2, // Adjust vertical position as needed
+      size: 50, // Font size
+      font : customFont,
+      color: rgb(0, 0, 0), // Black color
+    });
+
+    // Save the modified PDF as bytes
+    const pdfBytes = await pdfDoc.save();
+
+    // Send the PDF as a downloadable response
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="Certificate.pdf"');
+    res.end(Buffer.from(pdfBytes));
+  } catch (error) {
+    console.error('Error generating certificate:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+
+
+})
+
+// router.post('/generateCertificate', (req, res) => {
+//   const {userId} = req.body
+//   try {
+//     const filePath = path.join(__dirname, 'Certificate.pdf'); // Adjust path if needed
+
+//     if (!fs.existsSync(filePath)) {
+//       return res.status(404).json({ message: 'Certificate template not found' });
+//     }
+
+//     const fileStream = fs.createReadStream(filePath);
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', 'attachment; filename="Certificate.pdf"');
+//     fileStream.pipe(res);
+//   } catch (error) {
+//     console.error('Error serving certificate:', error);
+//     res.status(500).json({ message: 'Internal Server Error' });
+//   }
+// });
 
   module.exports = router;

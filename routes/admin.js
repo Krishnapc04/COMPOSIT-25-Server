@@ -34,10 +34,10 @@ router.use(cookieParser());
       const token = jwt.sign(
         { email: process.env.ADMIN_EMAIL },  
         process.env.JWT_SECRET, 
-        { expiresIn: '2h' } // Token validity
+        { expiresIn: '30d' } // Token validity
       );
   
-      // Save token in cookies (with HttpOnly flag for security)
+      // Save token in cookies (with HttpOnly flag for securit  y)
       res.cookie('token', token, {
         secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
         maxAge: 7200000,  // 1 hour (in milliseconds)
@@ -158,21 +158,94 @@ router.post('/generatecertificate', isAdmin, async (req, res) => {
   }
 });
 
-// Allote Hall 
-router.post('/allotHall', isAdmin, async (req, res) => {
-  const { userId, HallName} = req.body;
 
+
+// Get SA
+
+router.post('/getSA',isAdmin, async (req,res)=>{
   try {
-    const user = await User.findByIdAndUpdate(userId, { $set: { Hall: HallName } }, { new: true });
+
+    const SA = await User.find({Sa: true});
+
+    if(!SA){
+      return res.status(404).json({ message: 'SA not found' });
+    }
+
+    res.status(200).json({SA});
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+
+})
+
+
+// Get User by id
+
+router.post('/getUser',isAdmin, async (req,res)=>{
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
       }
-      res.status(200).json({ message: 'Hall Alloted', user });
+      res.status(200).json({ user });
     
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 })
+
+
+// Allote Hall
+
+router.post('/allotHall', isAdmin, async (req, res) => {
+  try {
+    const { userId, Hall } = req.body;
+
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+      user.Hall = Hall
+      await user.save()
+
+      res.status(200).json({ message: 'Hall alloted successfully', user : user });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
+
+
+// Get Hall Info
+
+router.post('/HallsInfo', isAdmin, async (req, res) => {
+  const { HallName } = req.body;
+
+  try {
+    // Check if HallName is provided
+    if (!HallName) {
+      return res.status(400).json({ message: 'HallName is required' });
+    }
+
+    // Find users who have the specified hall allotted
+    const users = await User.find({ Hall: HallName });
+
+    // Count the total number of users
+    const totalUsers = users.length;
+
+    res.status(200).json({ 
+      Hall: HallName,
+      Total : totalUsers,
+      Users : users 
+    });
+
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
 

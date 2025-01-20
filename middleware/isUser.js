@@ -6,7 +6,7 @@ const isUser = (req, res, next) => {
     console.log(req.cookies)
     console.log(req.cookies.token)
     // const token = req.cookies.token;
-    const token = req.body.token;
+    const token = req.header('auth-token');
     console.log("token found", token)
     if (!token) return res.status(401).send({ message: 'Unauthorized - Token not Provided' });
 
@@ -22,7 +22,7 @@ const isUser = (req, res, next) => {
             return res.status(401).send({ message: 'Unauthorized - Invalid Token' });
         }
 
-        req.user = decoded;
+        req.userId = decoded;
         // console.log("before next")
         next();
 

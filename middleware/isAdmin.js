@@ -18,7 +18,7 @@ const isAdmin = (req, res, next) => {
 
   try {
     // Verify the JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); 
 
     // Check if the email matches the admin email
     const adminEmail = process.env.ADMIN_EMAIL; // Store admin email in .env file
@@ -29,7 +29,7 @@ const isAdmin = (req, res, next) => {
     // Attach user information to the request object for further use
     req.user = decoded;
     next(); // Proceed to the next middleware or route handler
-  } catch (error) {
+  } catch (error) { 
     return res.status(400).json({ message: 'Invalid or expired token.' });
   }
 };

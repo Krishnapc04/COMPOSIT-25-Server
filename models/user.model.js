@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: true, 
       minlength: 6,
     },
     phone: {
@@ -74,11 +74,33 @@ const UserSchema = new mongoose.Schema(
     present : {
       type: Boolean,
       default: false
-    },
+    }, 
     Hall : {
+      type: String,
+      trim: true,
+      default: "None"
+    },
+    Sa :{
+      type: Boolean,
+      trim: true,
+      default: false
+    },
+    SaId :{ 
       type: String,
       trim: true
     },
+    SaMember : [
+      {
+        MemberId :{
+          type: String, 
+          trim: true
+        },
+        MemberName :{
+          type: String,
+          trim: true
+        }
+      }
+    ],
     events : [
       {
         eventName :{
