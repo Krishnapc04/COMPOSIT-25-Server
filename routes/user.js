@@ -46,9 +46,11 @@ router.post('/register', async (req, res) => {
 
     if (referal) {
       const SA = await User.findOne({ SaId : referal });
+      console.log(SA)
       if (SA) {
-        SA.SaMember.push({ MemberId: customID, MemberName: userData.name });
+        SA.SaMember.push({ MemberId: customID, MemberName: userData.name, MemberPhone: userData.phone, MemberEmail: userData.email, RegisteredDate : new Date() });
         await SA.save();
+        console.log("SA updated",SA)
       }
     }
 
@@ -71,7 +73,7 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(
       { id: newUser._id },
       process.env.JWT_SECRET,
-      { expiresIn: '2h' } // Token validity
+      { expiresIn: '30d' } // Token validity
     );
 
     // Save token in cookies (with HttpOnly flag for security)
@@ -105,9 +107,15 @@ router.post('/SaRegister', async (req, res) => {
       65 + Math.floor(Math.random() * 26)
     );
     const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
+
+    const randomLetters2 = String.fromCharCode(
+      65 + Math.floor(Math.random() * 26),
+      65 + Math.floor(Math.random() * 26)
+    );
+    const randomNumbers2 = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
     const customID = `C25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
 
-    const SAId = `CSA25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
+    const SAId = `CSA25${namePart}${phonePart}${randomLetters2}${randomNumbers2}`;
     userData.SaId = SAId
     userData.Sa = true
 
@@ -134,9 +142,9 @@ router.post('/SaRegister', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: newUser._id },
+      { id: newUser._id, role: "Student Ambassador" },
       process.env.JWT_SECRET,
-      { expiresIn: '2h' } // Token validity
+      { expiresIn: '30d' } // Token validity
     );
 
     // Save token in cookies (with HttpOnly flag for security)
@@ -153,6 +161,20 @@ router.post('/SaRegister', async (req, res) => {
   }
 });
 
+// Get Sa Members
+router.post('/getsamembers', async (req, res) => {
+  const { SaId } = req.body;
+  try {
+    const SA = await User.findOne({ SaId : SaId });
+    if (SA) {
+      res.status(200).json({ message: 'SA Members found', members: SA.SaMember });
+    } else {
+      res.status(404).json({ message: 'SA not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
 
@@ -179,12 +201,26 @@ router.post('/SaRegister', async (req, res) => {
       delete userData.referral
 
 
+      if (user.Sa) {
+        const token = jwt.sign(
+          { id: user._id },  
+          process.env.JWT_SECRET, 
+          { expiresIn: '30d' } // Token validity
+        );
+      }else{
+        const token = jwt.sign(
+          { id: user._id },  
+          process.env.JWT_SECRET, 
+          { expiresIn: '30d' } // Token validity
+        );
+      }
       // Generate JWT token
       const token = jwt.sign(
         { id: user._id },  
         process.env.JWT_SECRET, 
-        { expiresIn: '1h' } // Token validity
+        { expiresIn: '30d' } // Token validity
       );
+      
 
       console.log("token generated", token)
   

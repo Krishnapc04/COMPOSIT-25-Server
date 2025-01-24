@@ -6,7 +6,9 @@ const isUser = (req, res, next) => {
     console.log(req.cookies)
     console.log(req.cookies.token)
     // const token = req.cookies.token;
-    const token = req.header('auth-token');
+    // const token = req.header('auth-token');
+    const { token} = req.body;
+
     console.log("token found", token)
     if (!token) return res.status(401).send({ message: 'Unauthorized - Token not Provided' });
 

@@ -98,7 +98,20 @@ const UserSchema = new mongoose.Schema(
         MemberName :{
           type: String,
           trim: true
-        }
+        },
+        MemberEmail:{
+          type: String,
+          trim: true
+          },
+          MemberPhone:{
+            type: String,
+            trim: true
+            },
+            timestamps: {
+              type: Date,
+              default: Date.now,
+            },
+
       }
     ],
     events : [

@@ -147,10 +147,11 @@ router.post('/generatecertificate', isAdmin, async (req, res) => {
 
   try {
     const user = await User.findByIdAndUpdate(userId, { $set: { certificate: true } }, { new: true });
+     await user.save()
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
       }
-      const certificate = await generateCertificate(user);
+      // const certificate = await generateCertificate(user);
       res.status(200).json({ message: 'Certificate generated', certificate });
     
   } catch (error) {
