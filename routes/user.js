@@ -12,9 +12,50 @@ const fontkit = require('@pdf-lib/fontkit'); // Import fontkit
 const fs = require("fs");
 const path = require("path");
 const isSa = require('../middleware/isSa');
-
+const nodemailer = require("nodemailer");
 
 router.use(cookieParser());
+
+
+
+// Email sending function
+const sendWelcomeEmail = async (userEmail, userName) => {
+  try {
+    // Configure transporter with your email service credentials
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com", // Gmail's SMTP server
+      port: 587,
+      secure: false, // Use TLS
+      auth: {
+        user: process.env.EMAIL_USER, // Your email address 
+        pass: process.env.EMAIL_PASS, // Your email password or app password
+      },
+    });
+
+    // Email content
+    const mailOptions = {
+      from:  process.env.EMAIL_USER, // Sender address
+      to: userEmail, // Recipient email
+      subject: "Welcome to COMPOSIT!", // Email subject
+      html: `
+        <h2>Welcome, ${userName}!</h2>
+        <p>Thank you for registering for COMPOSIT. We're excited to have you on board!</p>
+        <p>Stay tuned for updates about our events and competitions.</p>
+        <br />
+        <p>Best Regards,</p>
+        <p><strong>COMPOSIT Team, IIT Kharagpur</strong></p>
+      `, // Email body in HTML format
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log("Welcome email sent to", userEmail);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+};
+
+
 
 
 // Register 
@@ -61,6 +102,9 @@ router.post('/register', async (req, res) => {
     userData.password = await bcrypt.hash(userData.password, 10); // Hash password
     const newUser = new User(userData);
     await newUser.save();
+
+
+    await sendWelcomeEmail(userData.email, userData.name);
 
 
     delete userData.password;  
@@ -139,6 +183,8 @@ router.post('/SaRegister', async (req, res) => {
     delete userData.updatedAt;
     delete userData.__v;
     delete userData.referral
+
+    await sendWelcomeEmail(userData.email, userData.name);
 
 
     // Generate JWT token
