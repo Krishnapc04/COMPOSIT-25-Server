@@ -11,6 +11,7 @@ const { PDFDocument, rgb } = require("pdf-lib");
 const fontkit = require('@pdf-lib/fontkit'); // Import fontkit
 const fs = require("fs");
 const path = require("path");
+const isSa = require('../middleware/isSa');
 
 
 router.use(cookieParser());
@@ -23,15 +24,15 @@ router.post('/register', async (req, res) => {
   try {
     console.log('Received Data:', userData);
 
-    const namePart = userData.name && userData.name.slice(0, 2).toUpperCase();
-    const phonePart = userData.phone && userData.phone.slice(-3);
+    const namePart = userData.name && userData.name.slice(0, 3).toUpperCase();
+    const phonePart = userData.phone && userData.phone.slice(-2);
 
     const randomLetters = String.fromCharCode(
       65 + Math.floor(Math.random() * 26),
       65 + Math.floor(Math.random() * 26)
     );
     const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
-    const customID = `C25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
+    const customID = `C25${namePart}${phonePart}${randomNumbers}`;
 
     userData._id = customID;
 
@@ -99,23 +100,23 @@ router.post('/SaRegister', async (req, res) => {
   try {
     console.log('Received Data:', userData);
 
-    const namePart = userData.name && userData.name.slice(0, 2).toUpperCase();
-    const phonePart = userData.phone && userData.phone.slice(-3);
+    const namePart = userData.name && userData.name.slice(0, 3).toUpperCase();
+    const namePart2 = userData.name && userData.name.slice(0, 2).toUpperCase();
+    const phonePart = userData.phone && userData.phone.slice(-2);
 
-    const randomLetters = String.fromCharCode(
-      65 + Math.floor(Math.random() * 26),
-      65 + Math.floor(Math.random() * 26)
-    );
+
+     const abbrivation = userData.abbrivation && userData.abbrivation.slice(0, 2).toUpperCase();
+     console.log(abbrivation)
     const randomNumbers = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
 
-    const randomLetters2 = String.fromCharCode(
-      65 + Math.floor(Math.random() * 26),
-      65 + Math.floor(Math.random() * 26)
-    );
-    const randomNumbers2 = Math.floor(10 + Math.random() * 90); // Ensures 2 digits
-    const customID = `C25${namePart}${phonePart}${randomLetters}${randomNumbers}`;
+    const allSa = await User.find({Sa : true})
 
-    const SAId = `CSA25${namePart}${phonePart}${randomLetters2}${randomNumbers2}`;
+    console.log(allSa.length, "all sa found")
+    const totalSa = allSa.length
+ 
+    const customID = `C25${namePart}${phonePart}${randomNumbers}`;
+
+    const SAId = `25SA${abbrivation}${namePart2}${totalSa+1}`;
     userData.SaId = SAId
     userData.Sa = true
 
@@ -144,7 +145,7 @@ router.post('/SaRegister', async (req, res) => {
     const token = jwt.sign(
       { id: newUser._id, role: "Student Ambassador" },
       process.env.JWT_SECRET,
-      { expiresIn: '30d' } // Token validity
+      { expiresIn: '300d' } // Token validity
     );
 
     // Save token in cookies (with HttpOnly flag for security)
@@ -162,7 +163,7 @@ router.post('/SaRegister', async (req, res) => {
 });
 
 // Get Sa Members
-router.post('/getsamembers', async (req, res) => {
+router.post('/getsamembers',isSa ,  async (req, res) => {
   const { SaId } = req.body;
   try {
     const SA = await User.findOne({ SaId : SaId });
@@ -188,6 +189,7 @@ router.post('/getsamembers', async (req, res) => {
       // Find user by email
       const user = await User.findOne({ email });
       if (!user) return res.status(404).json({ message: 'User not found' });
+
   
       // Compare the password
       const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -200,27 +202,23 @@ router.post('/getsamembers', async (req, res) => {
       delete userData.__v;
       delete userData.referral
 
+    
+let token; 
 
       if (user.Sa) {
-        const token = jwt.sign(
-          { id: user._id },  
+         token = jwt.sign(
+          { id: user.SaId, role: "Student Ambassador" },  
           process.env.JWT_SECRET, 
           { expiresIn: '30d' } // Token validity
         );
       }else{
-        const token = jwt.sign(
+        token = jwt.sign(
           { id: user._id },  
           process.env.JWT_SECRET, 
           { expiresIn: '30d' } // Token validity
         );
       }
-      // Generate JWT token
-      const token = jwt.sign(
-        { id: user._id },  
-        process.env.JWT_SECRET, 
-        { expiresIn: '30d' } // Token validity
-      );
-      
+
 
       console.log("token generated", token)
   

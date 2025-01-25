@@ -3,8 +3,8 @@ const dotenv = require('dotenv');
 dotenv.config(); // Load environment variables
 
 const isUser = (req, res, next) => {
-    console.log(req.cookies)
-    console.log(req.cookies.token)
+    // console.log(req.cookies)
+    // console.log(req.cookies.token)
     // const token = req.cookies.token;
     // const token = req.header('auth-token');
     const { token} = req.body;
