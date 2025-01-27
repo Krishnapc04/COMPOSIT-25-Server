@@ -19,7 +19,7 @@ router.use(cookieParser());
 
 
 // Email sending function
-const sendWelcomeEmail = async (userEmail, userName) => {
+const sendWelcomeEmail = async (userEmail, SaId ,  userName) => {
   try {
     // Configure transporter with your email service credentials
     const transporter = nodemailer.createTransport({
@@ -38,13 +38,31 @@ const sendWelcomeEmail = async (userEmail, userName) => {
       to: userEmail, // Recipient email
       subject: "Welcome to COMPOSIT!", // Email subject
       html: `
-        <h2>Welcome, ${userName}!</h2>
-        <p>Thank you for registering for COMPOSIT. We're excited to have you on board!</p>
-        <p>Stay tuned for updates about our events and competitions.</p>
-        <br />
-        <p>Best Regards,</p>
-        <p><strong>COMPOSIT Team, IIT Kharagpur</strong></p>
-      `, // Email body in HTML format
+         <p>Dear ${userName},</p>
+    <p>Welcome to the COMPOSIT family! We are thrilled to have you as a part of our team.</p>
+    <p>Your Student ambassador id is : <b> ${SaId} </b> .</p>
+    <p> This id can be used as refferal while registering a student from your college.</p>
+    <p> You can find this id in your profile on CA portal.</p>
+    <p>Feel free to reach out to us for any queries or assistance.</p>
+    <br>
+    <p>Best regards,</p>
+    <div style="display:flex; justify-content:space-between;">
+    <img src="cid:logo" alt="COMPOSIT Logo" style="width:150px; height:auto;"/>
+    <div>
+    <p><strong>COMPOSIT Team</strong></p>
+    <p>IIT Kharagpur</p>
+    <p> +91 8767650199</p>
+    </div>
+    <br>
+    </div>
+      `,
+      attachments: [
+        {
+          filename: 'logo.png', // Replace with your file name
+          path: './routes/logo.png', // Path to your image
+          cid: 'logo', // Same as the `cid` in the `<img>` tag
+        },
+      ], // Email body in HTML format
     };
 
     // Send email
@@ -184,7 +202,7 @@ router.post('/SaRegister', async (req, res) => {
     delete userData.__v;
     delete userData.referral
 
-    await sendWelcomeEmail(userData.email, userData.name);
+    await sendWelcomeEmail(userData.email,userData.SaId,  userData.name);
 
 
     // Generate JWT token
@@ -298,7 +316,7 @@ let token;
 
   // Logout
 
-  router.post('/logout',isUser , async (req, res) => {
+  router.post('/logout' , async (req, res) => {
   
     try {
 
