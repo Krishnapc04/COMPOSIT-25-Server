@@ -213,8 +213,9 @@ router.post('/getsamembers',isSa ,  async (req, res) => {
   const { SaId } = req.body;
   try {
     const SA = await User.findOne({ SaId : SaId });
-    if (SA) {
-      res.status(200).json({ message: 'SA Members found', members: SA.SaMember });
+    const users = await User.find({referral : SaId })
+    if (users) {
+      res.status(200).json({ message: 'SA Members found', members: users });
     } else {
       res.status(404).json({ message: 'SA not found' });
     }
