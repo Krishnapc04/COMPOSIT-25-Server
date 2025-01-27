@@ -15,7 +15,7 @@ const isSa = (req, res, next) => {
     try {
         // console.log("try runned")
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // console.log('decoded token', decoded)
+        console.log('decoded token', token)
         const logedInUserId = decoded.id;
         const role = decoded.role;
 

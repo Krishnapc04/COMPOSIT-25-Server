@@ -207,16 +207,14 @@ router.post('/SaRegister', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: newUser._id, role: "Student Ambassador" },
+      { id: userData.SaId, role: "Student Ambassador" },
       process.env.JWT_SECRET,
-      { expiresIn: '300d' } // Token validity
     );
 
     // Save token in cookies (with HttpOnly flag for security)
     res.cookie('token', token, {
       httpOnly: true,   // Prevent access to the cookie via JavaScript
       secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
-      maxAge: 7200000,  // 2 hours (in milliseconds)
     });
 
     return res.status(201).json({ message: 'User created successfully', token:token , user: { userData } });
