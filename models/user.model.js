@@ -89,6 +89,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    ApprovedSa :{
+      type: Boolean,
+      trim: true,
+      default: false
+    },
     SaMember : [
       {
         MemberId :{

@@ -34,13 +34,11 @@ router.use(cookieParser());
       const token = jwt.sign(
         { email: process.env.ADMIN_EMAIL },  
         process.env.JWT_SECRET, 
-        { expiresIn: '30d' } // Token validity
       );
   
       // Save token in cookies (with HttpOnly flag for securit  y)
       res.cookie('token', token, {
         secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
-        maxAge: 7200000,  // 1 hour (in milliseconds)
       });
   
       // Send response
@@ -250,7 +248,22 @@ router.post('/HallsInfo', isAdmin, async (req, res) => {
 
 
 
+router.post('/approve', isAdmin, async (req,res)=>{
+  const { SaId } = req.body;
+  try {
+    const user = await User.findOne({SaId : SaId});
+    if (!user){
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    user.ApprovedSa = true;
+    await user.save()
 
+    res.status(200).json({ message: 'User approved successfully.' });
+
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+})
 
 
 
