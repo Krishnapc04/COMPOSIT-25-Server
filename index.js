@@ -17,7 +17,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Parse cookies
 
-app.use(cors());
+const allowedOrigins = ['https://ca.composit.in', 'https://composit.in'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (allowedOrigins.includes(origin) || !origin) {
+            callback(null, origin); // Allow the request
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+    credentials: true, // Allow cookies and credentials
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+
 
 // Connect to MongoDB
 connectDB();
