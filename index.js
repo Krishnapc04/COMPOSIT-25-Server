@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Parse cookies
 
-const allowedOrigins = ['https://ca.composit.in', 'https://composit.in'];
+const allowedOrigins = ['https://ca.composit.in', 'https://composit.in','http://localhost:5173','https://admin.composit.in'];
 
 app.use(cors({
     origin: (origin, callback) => {
