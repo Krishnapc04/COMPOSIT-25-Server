@@ -10,19 +10,26 @@ const isUser = (req, res, next) => {
     const { token} = req.body;
 
     console.log("token found", token)
-    if (!token) return res.status(401).send({ message: 'Unauthorized - Token not Provided' });
+    if (!token) return res.status(401).send({ message: 'Unauthorized - Token not Provided, not found' });
 
     try {
         // console.log("try runned")
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         // console.log('decoded token', decoded)
-        const logedInUserId = decoded.id;
+        let logedInUserId = decoded.id;
+        
+
+        if (decoded.role && decoded.role === 'Student Ambassador') {
+            logedInUserId = decoded.regId
+        }
 
         const requestedUserId = req.body.userId;
 
+        console.log(logedInUserId, requestedUserId)
         if (logedInUserId !== requestedUserId) {
-            return res.status(401).send({ message: 'Unauthorized - Invalid Token' });
+            return res.status(401).send({ message: 'Unauthorized - Invalid Token id is differrent' });
         }
+        
 
         req.userId = decoded;
         // console.log("before next")

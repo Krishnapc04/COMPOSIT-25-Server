@@ -17,14 +17,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Parse cookies
 
-const allowedOrigins = ['https://ca.composit.in', 'https://composit.in','http://localhost:5173','https://admin.composit.in'];
+const allowedOrigins = ['https://ca.composit.in', 'https://composit.in','http://localhost:5173','https://admin.composit.in','http://localhost:3000',"https://composit-25.vercel.app"];
 
 app.use(cors({
     origin: (origin, callback) => {
         if (allowedOrigins.includes(origin) || !origin) {
             callback(null, origin); // Allow the request
         } else {
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error('Not allowed by CORS')); 
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
@@ -32,7 +32,7 @@ app.use(cors({
 }));
 
 // Handle preflight requests
-app.options('*', cors());
+app.options('*', cors()); 
 
 
 // Connect to MongoDB

@@ -142,11 +142,11 @@ router.post('/register', async (req, res) => {
     // Save token in cookies (with HttpOnly flag for security)
     res.cookie('token', token, {
       httpOnly: true,   // Prevent access to the cookie via JavaScript
-      secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
+      secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production 
       maxAge: 7200000,  // 2 hours (in milliseconds)
     });
 
-    return res.status(201).json({ message: 'User created successfully', token:token , user: { userData } });
+    return res.status(201).json({ message: 'User created successfully', token:token , user:userData });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -224,6 +224,8 @@ router.post('/SaRegister', async (req, res) => {
   }
 });
 
+
+
 // Get Sa Members
 router.post('/getsamembers',isSa ,  async (req, res) => {
   const { SaId } = req.body;
@@ -270,15 +272,15 @@ let token;
 
       if (user.Sa) {
          token = jwt.sign(
-          { id: user.SaId, role: "Student Ambassador" },  
+          { id: user.SaId,regId: user._id, role: "Student Ambassador" },  
           process.env.JWT_SECRET, 
-          { expiresIn: '30d' } // Token validity
+          // { expiresIn: '30d' } // Token validity
         );
       }else{
         token = jwt.sign(
           { id: user._id },  
           process.env.JWT_SECRET, 
-          { expiresIn: '30d' } // Token validity
+          // { expiresIn: '30d' } // Token validity
         );
       }
 
@@ -289,7 +291,7 @@ let token;
       res.cookie('token', token, {
         httpOnly: true,   // Prevent access to the cookie via JavaScript
         secure: process.env.NODE_ENV === 'production', // Only set cookie over HTTPS in production
-        maxAge: 7200000,  // 1 hour (in milliseconds)
+        // maxAge: 7200000,  // 1 hour (in milliseconds)
       });
 
  console.log("token saved to cookies")
@@ -299,8 +301,7 @@ let token;
       console.log("saved cookies : ", req.cookies)
       // Send response
       res.status(200).json({
-        message: 'Login successful',
-        user: { userData },
+        user: userData,
         token : token
       });
 
@@ -336,11 +337,24 @@ let token;
 
 // Team Registrations - Create Team 
 
+
+
+
 router.post('/maketeam',isUser , async (req, res) => {
 
   // console.log("Request Body:", req.body);
-  const { userId, EventDetials } = req.body;
+  const { userId, eventName, teamName } = req.body;
   // console.log("Event Details:", EventDetials);
+  const result = await Event.aggregate([
+    {
+        $project: { totalTeams: { $size: "$Teams" } }
+    },
+    {
+        $group: { _id: null, totalTeamsRegistered: { $sum: "$totalTeams" } }
+    }
+]);
+
+const totalTeams = result.length > 0 ? result[0].totalTeamsRegistered : 0;
 
   try {   
 
@@ -348,17 +362,17 @@ router.post('/maketeam',isUser , async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-let event = await Event.findOne({ eventName: EventDetials.eventName });
+let event = await Event.findOne({ eventName: eventName });
 
 
 if (!event) {
-  event = new Event({ eventName: EventDetials.eventName, Teams: [] });
+  event = new Event({ eventName: eventName, Teams: [] });
   await event.save();
 }
     
     // console.log('event foudn', event)
 
-    const teamPart = EventDetials.teamName && EventDetials.teamName.slice(0, 2).toUpperCase();
+    const teamPart = teamName && teamName.slice(0, 2).toUpperCase();
 
     const randomLetters = String.fromCharCode(
       65 + Math.floor(Math.random() * 26),
@@ -368,20 +382,24 @@ if (!event) {
 
 
     // Check if the teamName already exists in the event
-    const teamExists = Event.Teams.some((team) => team.teamName === EventDetials.teamName);
+    const teamExists = event.Teams.some((team) => team.teamName === teamName);
     if (teamExists) {
       return res.status(400).json({ message: 'Team name already exists in this event.' });
     }
 
     // console.log('eventDetials', EventDetials)
+    const isUserRegistered = event.Teams.some(team => 
+      team.members.some(member => member.memberId.toString() === userId)
+    );
     
-    const customID = `C25${teamPart}${randomLetters}${randomNumbers}`;
-// console.log('customId genetrated', customID)
+    if (isUserRegistered) {
+      return res.status(400).json({ message: 'User is already registered in this event.' });
+    }
 
-    // console.log('before theams push',event)
+    const customID = `TC25${teamPart}${randomLetters}${randomNumbers}${totalTeams + 1}`;
 
     event.Teams.push({
-      teamName: EventDetials.teamName,
+      teamName: teamName,
       teamId: customID,
       members: [
         {
@@ -393,30 +411,20 @@ if (!event) {
       ]   
 
     });
-
-    // console.log('After theams push', event)
-
-
-    
     await event.save();
 
-console.log('Event saved successfully')
-
     user.events.push({
-      eventName: EventDetials.eventName,
-      teamName: EventDetials.teamName,
+      eventName: eventName,
+      teamName: teamName,
       teamId: customID,
-      role:"Admin"
+      role:"Admin" 
     })
     // console.log('after user push', user)
 
     await user.save();
 
 console.log(event, user)
-    res.status(200).json({ message: 'Team created successfully' });
-
-
-
+    res.status(200).json({ message: 'Team created successfully',teamCode: customID, userData: user});
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -442,23 +450,21 @@ router.post('/jointeam',isUser,  async (req, res) => {
     if (!team) {
       return res.status(404).json({ message: 'Team not found' });
     }
-
+    
     const userExistsInTeam = team.members.some((member) => member.memberId.toString() === user._id.toString());
 
 if (userExistsInTeam) {
   return res.status(400).json({ message: 'User is already a member of this team.' });
 }
 
-
     team.members.push({ name: user.name, email: user.email, role: "Member", memberId: user._id });
+    user.events.push({ eventName: eventName, teamName: team.teamName, teamId:teamId , role: "Member" });
 
-    // await team.save();
     await event.save();
 
-    user.events.push({ eventName, teamName: team.teamName, teamId, role: "Member" });
     await user.save();
 
-    res.status(200).json({ message: 'Joined team successfully' });
+    res.status(200).json({ message: 'Joined team successfully', userData: user });
 
 
   } catch (error) {
@@ -467,6 +473,22 @@ if (userExistsInTeam) {
 
 
 })
+
+
+
+router.post('/getUser', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+        res.status(200).json({ user });
+      } catch (error) {
+        res.send(error.message);
+        }
+})
+
 
 
 router.post('/generateCertificate', async (req,res)=>{
@@ -535,23 +557,14 @@ router.post('/generateCertificate', async (req,res)=>{
 
 })
 
-// router.post('/generateCertificate', (req, res) => {
-//   const {userId} = req.body
-//   try {
-//     const filePath = path.join(__dirname, 'Certificate.pdf'); // Adjust path if needed
+router.post('/getEvents', isUser, async (req, res) => {
+  const { UserId } = req.body;
+  try {
 
-//     if (!fs.existsSync(filePath)) {
-//       return res.status(404).json({ message: 'Certificate template not found' });
-//     }
-
-//     const fileStream = fs.createReadStream(filePath);
-//     res.setHeader('Content-Type', 'application/pdf');
-//     res.setHeader('Content-Disposition', 'attachment; filename="Certificate.pdf"');
-//     fileStream.pipe(res);
-//   } catch (error) {
-//     console.error('Error serving certificate:', error);
-//     res.status(500).json({ message: 'Internal Server Error' });
-//   }
-// });
+    
+  } catch (error) {
+    res.status(500).json(error.message)
+  }
+})
 
   module.exports = router;
