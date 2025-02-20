@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Parse cookies
 
-const allowedOrigins = ['https://ca.composit.in', 'https://composit.in','http://localhost:5173','https://admin.composit.in','http://localhost:3000',"https://composit-25.vercel.app","https://www.composit.in/"];
+const allowedOrigins = ['https://ca.composit.in', 'https://composit.in','http://localhost:5173','https://admin.composit.in','http://localhost:3000',"https://composit-25.vercel.app","https://www.composit.in"];
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -30,7 +30,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
     credentials: true, // Allow cookies and credentials
 }));
-
+ 
 // Handle preflight requests
 app.options('*', cors()); 
 
