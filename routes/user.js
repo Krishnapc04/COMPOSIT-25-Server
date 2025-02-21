@@ -433,46 +433,65 @@ console.log(event, user)
 
 // Join Team 
 
-router.post('/jointeam',isUser,  async (req, res) => {
-  const {userId , eventName, teamId} = req.body;
+router.post('/jointeam', isUser, async (req, res) => {
+  const { userId, eventName, teamId } = req.body;
+
+  // Define team size limits
+  const teamLimits = {
+    Metaclix: 1,
+    Enigma: 2,
+    MetaCode: 1,
+    Excavate: 3,
+    CaseStudy: 3,
+    Technova: 3,
+    Ideathon: 3,
+    CadVolution: 3,
+  };
 
   try {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
     const event = await Event.findOne({ eventName });
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
-    const team = event.Teams.find((team) => team.teamId === teamId);
 
+    const team = event.Teams.find((team) => team.teamId === teamId);
     if (!team) {
       return res.status(404).json({ message: 'Team not found' });
     }
-    
-    const userExistsInTeam = team.members.some((member) => member.memberId.toString() === user._id.toString());
 
-if (userExistsInTeam) {
-  return res.status(400).json({ message: 'User is already a member of this team.' });
-}
+    // Check if the team is full
+    const maxMembers = teamLimits[eventName];
+    if (team.members.length >= maxMembers) {
+      return res.status(400).json({ message: 'Team is full' });
+    }
 
+    // Check if user is already in the team
+    const userExistsInTeam = team.members.some(
+      (member) => member.memberId.toString() === user._id.toString()
+    );
+
+    if (userExistsInTeam) {
+      return res.status(400).json({ message: 'User is already a member of this team.' });
+    }
+
+    // Add user to the team
     team.members.push({ name: user.name, email: user.email, role: "Member", memberId: user._id });
-    user.events.push({ eventName: eventName, teamName: team.teamName, teamId:teamId , role: "Member" });
+    user.events.push({ eventName, teamName: team.teamName, teamId, role: "Member" });
 
     await event.save();
-
     await user.save();
 
     res.status(200).json({ message: 'Joined team successfully', userData: user });
 
-
   } catch (error) {
-    res.send(error.message)
+    res.status(500).json({ message: error.message });
   }
-
-
-})
+});
 
 
 
