@@ -72,6 +72,59 @@ const sendWelcomeEmail = async (userEmail, SaId ,  userName) => {
     console.error("Error sending email:", error);
   }
 };
+const sendCompositRegistrationMail = async (userEmail, UserId ,  userName) => {
+  try {
+    // Configure transporter with your email service credentials
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com", // Gmail's SMTP server
+      port: 587,
+      secure: false, // Use TLS
+      auth: {
+        user: process.env.EMAIL_USER, // Your email address 
+        pass: process.env.EMAIL_PASS, // Your email password or app password
+      },
+    });
+
+    // Email content
+    const mailOptions = {
+      from:  process.env.EMAIL_USER, // Sender address
+      to: userEmail, // Recipient email
+      subject: "Welcome to COMPOSIT!", // Email subject
+      html: `
+         <p>Dear ${userName},</p>
+    <p>Welcome to the COMPOSIT family! We are thrilled to have you as a part of our team.</p>
+    <p>Your COMPOSIT id is : <b> ${UserId} </b> .</p>
+    <p> This id will be used to register the event.</p>
+    <p> You can find this id in your profile page on Website.</p>
+    <p>Feel free to reach out to us for any queries or assistance.</p>
+    <br>
+    <p>Best regards,</p>
+    <div style="display:flex; justify-content:space-between;">
+    <img src="cid:logo" alt="COMPOSIT Logo" style="width:150px; height:auto;"/>
+    <div>
+    <p><strong>COMPOSIT Team</strong></p>
+    <p>IIT Kharagpur</p>
+    <p> +91 8767650199</p>
+    </div>
+    <br>
+    </div>
+      `,
+      attachments: [
+        {
+          filename: 'logo.png', // Replace with your file name
+          path: './routes/logo.png', // Path to your image
+          cid: 'logo', // Same as the `cid` in the `<img>` tag
+        },
+      ], // Email body in HTML format
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log("Welcome email sent to", userEmail);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+};
 
 
 
@@ -122,7 +175,7 @@ router.post('/register', async (req, res) => {
     await newUser.save();
 
 
-    await sendWelcomeEmail(userData.email, userData.name);
+    await sendCompositRegistrationMail(userData.email,userData._id, userData.name);
 
 
     delete userData.password;  
