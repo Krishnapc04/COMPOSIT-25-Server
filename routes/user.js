@@ -277,6 +277,55 @@ router.post('/SaRegister', async (req, res) => {
   }
 });
 
+//Update profile
+
+router.post('/updateprofile',isUser,  async (req, res) => {
+  const { userId, name, email, phone, city, state } = req.body;
+
+  try {
+    // Find the user by ID
+    let user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check for email uniqueness
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+      user.email = email;
+    }
+
+    // Check for phone uniqueness
+    if (phone && phone !== user.phone) {
+      const phoneExists = await User.findOne({ phone });
+      if (phoneExists) {
+        return res.status(400).json({ message: 'Phone number already in use' });
+      }
+      user.phone = phone;
+    }
+
+    // Update other details
+    if (name) user.name = name;
+    // if (hall) user.Hall = hall;
+    if (city) user.city = city;
+    if (state) user.state = state;
+
+    // Hash password if updated
+    // if (password) {
+    //   user.password = await bcrypt.hash(password, 10);
+    // }
+
+    await user.save();
+
+    return res.status(200).json({ message: 'Profile updated successfully', user });
+
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 
 // Get Sa Members
