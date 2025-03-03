@@ -17,24 +17,34 @@ router.use(cookieParser());
     const { email, password } = req.body;
   
     try {
+      let role;
+      let hashedPassword;
   
-      if (email !== process.env.ADMIN_EMAIL) {
-        return res.status(400).json({ message: 'Invalid email ' });
+      // Check email and assign role
+      if (email === process.env.ADMIN_EMAIL) {
+        role = "admin";
+        hashedPassword = process.env.ADMIN_PASSWORD;
+      } else if (email === process.env.PR_EMAIL) {
+        role = "publicity";
+        hashedPassword = process.env.PR_PASS;
+      } else if (email === process.env.EVENT_EMAIL) {
+        role = "event";
+        hashedPassword = process.env.EVENT_PASS;
+      } else {
+        return res.status(400).json({ message: "Invalid email" });
       }
-
-
-      // Compare the password
-      const isPasswordValid = await bcrypt.compare(password, process.env.ADMIN_PASSWORD);
-      if (password !== process.env.ADMIN_PASSWORD) {
-        return res.status(400).json({ message: 'Invalid password' });
+  
+      // Compare the provided password with stored password
+      if (password !== hashedPassword) {
+        return res.status(400).json({ message: "Invalid password" });
       }
-     
 
       // Generate JWT token
       const token = jwt.sign(
         { email: process.env.ADMIN_EMAIL },  
         process.env.JWT_SECRET, 
       );
+
   
       // Save token in cookies (with HttpOnly flag for securit  y)
       res.cookie('token', token, {
@@ -43,8 +53,9 @@ router.use(cookieParser());
   
       // Send response
       res.status(200).json({
-        message: 'Admin Login successful',
-        token : token
+        message: 'Login successful',
+        token : token,
+        role:role
       });
     } catch (error) {
       res.status(500).json({ error: error.message });

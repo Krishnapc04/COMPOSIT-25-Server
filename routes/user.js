@@ -485,6 +485,7 @@ if (!event) {
 
     // Check if the teamName already exists in the event
     const teamExists = event.Teams.some((team) => team.teamName === teamName);
+    
     if (teamExists) {
       return res.status(400).json({ message: 'Team name already exists in this event.' });
     }
