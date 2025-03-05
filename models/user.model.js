@@ -142,7 +142,23 @@ const UserSchema = new mongoose.Schema(
           default: Date.now,
         },
       }
-    ]
+    ],
+    payment:{
+      type: Boolean,
+      default: false
+    },
+    days:{
+      type: Number,
+      default: 0
+    },
+    amount:{
+      type: Number, 
+      default: 0
+    },
+    screenshot:{
+      type: String,
+      default: ''
+    }
   },
   { timestamps: true } // Automatically add createdAt and updatedAt fields
 );

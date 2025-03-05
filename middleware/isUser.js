@@ -23,7 +23,7 @@ const isUser = (req, res, next) => {
             logedInUserId = decoded.regId
         }
 
-        const requestedUserId = req.body.userId;
+        const requestedUserId = req.body.userId; 
 
         console.log(logedInUserId, requestedUserId)
         if (logedInUserId !== requestedUserId) {

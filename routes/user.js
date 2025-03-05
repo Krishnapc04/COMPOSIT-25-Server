@@ -14,7 +14,10 @@ const path = require("path");
 const isSa = require('../middleware/isSa');
 const nodemailer = require("nodemailer");
 
+
+
 router.use(cookieParser());
+
 
 
 
@@ -125,6 +128,63 @@ const sendCompositRegistrationMail = async (userEmail, UserId ,  userName) => {
     console.error("Error sending email:", error);
   }
 };
+
+
+const PaymentMail = async (name, UId ,  days, amount, screenshot) => {
+  try {
+    // Configure transporter with your email service credentials
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com", // Gmail's SMTP server
+      port: 587,
+      secure: false, // Use TLS
+      auth: {
+        user: process.env.EMAIL_USER, // Your email address 
+        pass: process.env.EMAIL_PASS, // Your email password or app password
+      },
+    });
+
+    // Email content
+    const mailOptions = {
+      from:  process.env.EMAIL_USER, // Sender address
+      to: "krishnachaudhari2309@gmail.com", // Recipient email
+      subject: "New Payment Done", // Email subject
+      html: `
+         <p>Dear Admin,</p>
+    <p>${name} has paid Rs.${amount} for ${days} days.</p>
+    <p>His COMPOSIT id is : <b> ${UId} </b> .</p>
+    <p>Kindly check the payemt and respond to it </p>
+    <p> You can check the payment screenshot here :<b> <a href="${screenshot}" target="_blank">Screenshot</a> </b> </p>
+    <img src="${screenshot}" alt="Payment Screenshot" style="width:200px; height:auto;"/>
+    <br>
+    <p>Best regards,</p>
+    <div style="display:flex; justify-content:space-between;">
+    <img src="cid:logo" alt="COMPOSIT Logo" style="width:150px; height:auto;"/>
+    <div>
+    <p><strong>COMPOSIT Team</strong></p>
+    <p>IIT Kharagpur</p>
+    <p> +91 8767650199</p>
+    </div>
+    <br>
+    </div> 
+      `,
+      attachments: [
+        {
+          filename: 'logo.png', // Replace with your file name
+          path: './routes/logo.png', // Path to your image
+          cid: 'logo', // Same as the `cid` in the `<img>` tag
+        }
+      ], // Email body in HTML format
+    };
+
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log("Welcome email sent");
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+};
+
+
 
 
 
@@ -688,5 +748,38 @@ router.post('/getEvents', isUser, async (req, res) => {
     res.status(500).json(error.message)
   }
 })
+
+
+router.post('/accommodation', async (req, res) => {
+  const { UserId, name, email, phone, days, amount, screenshot } = req.body;
+  try {
+    const user = await User.findById(UserId);
+console.log(UserId)
+console.log(user)
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+
+user.payment=true; 
+user.days = days;
+user.amount = amount;
+user.screenshot = screenshot
+
+await user.save()
+await PaymentMail( name, UserId,days, amount, screenshot );
+console.log("Mail sent successfully")
+
+      res.status(200).json({ user:user });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
+
+
+
+
+
 
   module.exports = router;
