@@ -212,7 +212,7 @@ router.post('/getAccomodation',isAdmin, async (req,res)=>{
   try {
     const { token } = req.body;
 
-    const user = await User.findOne({payment: true}, '-password -updatedAt -__v');
+    const user = await User.find({payment: true}, '-password -updatedAt -__v');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
       }
