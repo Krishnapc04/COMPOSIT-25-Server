@@ -212,7 +212,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
     if (await User.findOne({ phone: userData.phone })) {
-      return res.status(400).json({ message: 'This phone number already exists' });
+      return res.status(400).json({ message: 'User with this email already exists' });
     }
 
     const referal = userData.referral;

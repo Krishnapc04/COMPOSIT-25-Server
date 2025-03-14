@@ -158,6 +158,10 @@ const UserSchema = new mongoose.Schema(
     screenshot:{
       type: String,
       default: ''
+    },
+    arrival:{
+      type: String,
+      default: ''
     }
   },
   { timestamps: true } // Automatically add createdAt and updatedAt fields
