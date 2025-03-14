@@ -206,6 +206,24 @@ router.post('/getUser',isAdmin, async (req,res)=>{
   }
 })
 
+// Accomodation details
+
+router.post('/getAccomodation',isAdmin, async (req,res)=>{
+  try {
+    const { token } = req.body;
+
+    const user = await User.findOne({payment: true}, '-password -updatedAt -__v');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+      console.log(user)
+      res.status(200).json({ user });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
+
 
 // Allote Hall
 
