@@ -162,6 +162,10 @@ const UserSchema = new mongoose.Schema(
     arrival:{
       type: String,
       default: ''
+    },
+    arrivalDate:{
+      type: String,
+      default: ''
     }
   },
   { timestamps: true } // Automatically add createdAt and updatedAt fields
