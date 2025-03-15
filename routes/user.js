@@ -751,7 +751,7 @@ router.post('/getEvents', isUser, async (req, res) => {
 
 
 router.post('/accommodation', async (req, res) => {
-  const { UserId, name, email, phone, days, amount, screenshot, arrival, arrivalDate } = req.body;
+  const { UserId, name, email, phone, days, amount, screenshot, arrival, arrivalDate, comingEvent } = req.body;
   try {
     const user = await User.findById(UserId);
 console.log(UserId)
@@ -767,6 +767,7 @@ user.amount = amount;
 user.screenshot = screenshot
 user.arrival = arrival;
 user.arrivalDate=arrivalDate; 
+user.comingEvent=comingEvent;
 
 await user.save()
 await PaymentMail( name, UserId,days, amount, screenshot );
